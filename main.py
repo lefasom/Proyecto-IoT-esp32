@@ -50,16 +50,17 @@ try:
             if msg:
                 print(f"Mensaje recibido: {msg}")
                 data = ujson.loads(msg)
-                print(data['msg'])  
-                if data.get("type") == "from_react":
-                    cmd = data.get("command")
-                    print(f"Comando '{cmd}' recibido.")
-                    
-                    # Responder con ACK
-                    ws.send(ujson.dumps({
-                        "type": "to_react",
-                        "data": f"ESP32 {ESP32_ID} ejecutó {cmd}"
-                    }))
+                if data.get("to") == ESP32_ID:
+                    if data.get("type") == "message":
+                        mss = data.get("msg")
+                        print(f"Comando '{mss}' recibido.")
+                        
+                        # Responder con ACK
+                        ws.send(ujson.dumps({
+                            "from":ESP32_ID,
+                            "type": "message",
+                            "msg": f"Se ejecutó {mss}"
+                        }))
 
         except Exception as e:
             print(f"Error durante la comunicación: {e}")
