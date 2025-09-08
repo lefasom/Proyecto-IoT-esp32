@@ -2,6 +2,8 @@ import network
 import ujson
 import time
 from client import WebSocketClient
+import r307_sensor
+from time import sleep
 
 # 🔑 Configura tu WiFi
 WIFI_SSID = "HUAWEI-2.4G-94Df"
@@ -29,9 +31,19 @@ if wifi.isconnected():
     print("\nConectado a WiFi:", wifi.ifconfig())
 else:
     print("\nNo se pudo conectar a WiFi. Revisa el SSID y la contraseña.")
-    # Si no hay WiFi, no tiene sentido continuar
     while True:
         time.sleep(1)
+
+# Callback para enviar progreso al WS
+def ws_callback(message: str):
+    try:
+        ws.send(ujson.dumps({
+            "from": ESP32_ID,
+            "type": "progress",
+            "msg": message
+        }))
+    except Exception as e:
+        print(f"⚠️ Error enviando callback WS: {e}")
 
 # Conectar WebSocket
 print("Intentando conectar al servidor WebSocket...")
@@ -54,7 +66,11 @@ try:
                     if data.get("type") == "message":
                         mss = data.get("msg")
                         print(f"Comando '{mss}' recibido.")
-                        
+                        if mss == "agregar_huella":
+                            resp = r307_sensor.agregar_huella(progress_callback=ws_callback)
+                        elif mss == "detectar_huella":
+                            resp = r307_sensor.detectar_huella(progress_callback=ws_callback)
+                             
                         # Responder con ACK
                         ws.send(ujson.dumps({
                             "from":ESP32_ID,
